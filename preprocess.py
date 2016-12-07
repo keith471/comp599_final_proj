@@ -12,6 +12,8 @@ from time import time
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 
+from wordnet import WordNetVectorizer
+
 def read_file(fname):
     ''' returns an array containing the data from the file '''
     data = []
@@ -85,7 +87,7 @@ class LemmaTokenizer(object):
     def __call__(self, doc):
         return [self.wnl.lemmatize(word) for word in word_tokenize(doc)]
 
-def get_X_train(data, max_n_gram=1, lowercase=True, lemmatize=False, remove_stop_words=True, tfidf=False, verbose=True):
+def get_X_train(data, wn=False, max_n_gram=1, lowercase=True, lemmatize=False, remove_stop_words=True, tfidf=False, verbose=True):
 
     if verbose:
         print('Using n-grams of up to %d words in length' % max_n_gram)
@@ -118,7 +120,11 @@ def get_X_train(data, max_n_gram=1, lowercase=True, lemmatize=False, remove_stop
         if verbose:
             print('Extracting features from the test data using a count vectorizer')
         vectorizer = CountVectorizer(lowercase=lowercase, tokenizer=tokenizer, stop_words=stop_words, ngram_range=(1, max_n_gram))
-        X_train = vectorizer.fit_transform(data)
+        if wn:
+            vectorizer = WordNetVectorizer(vectorizer)
+            X_train = vectorizer.get_word_net_feature_vecs(data)
+        else:
+            X_train = vectorizer.fit_transform(data)
     duration = time() - t0
     if verbose:
         data_train_size_mb = size_mb(data)
@@ -127,11 +133,14 @@ def get_X_train(data, max_n_gram=1, lowercase=True, lemmatize=False, remove_stop
         print()
     return X_train, vectorizer
 
-def get_X_test(data, vectorizer, verbose=True):
+def get_X_test(data, vectorizer, wn=False, verbose=True):
     if verbose:
         print('Extracting features from the test data using the same vectorizer')
     t0 = time()
-    X_test = vectorizer.transform(data)
+    if wn:
+        X_test = vectorizer.vec_test_docs(data)
+    else:
+        X_test = vectorizer.transform(data)
     duration = time() - t0
     if verbose:
         data_test_size_mb = size_mb(data)
