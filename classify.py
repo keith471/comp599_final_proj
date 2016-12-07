@@ -349,8 +349,7 @@ if __name__ == '__main__':
             print('Shapte of X_test after chi-squared selection of features')
             print(X_test_chi2.shape)
             # the number of features to select with PCA
-            #all_num_feats = [300, 400, 500, 750, 1000, 1500, 2000, 5000, 10000, 15000, 20000, 30000, 40000, 50000]
-            all_num_feats = [300, 400, 500]
+            all_num_feats = [300, 400, 500, 750, 1000, 1500, 2000, 5000, 10000, 15000, 20000, 30000, 40000, 50000]
             results = []
             for num_feats in all_num_feats:
                 print('Selecting %d features using PCA' % num_feats)
@@ -375,6 +374,7 @@ if __name__ == '__main__':
                 print('_' * 40)
                 print()
                 print_pairs(res, ('classifier', 'accuracy'))
+                print()
             print()
             sys.exit(0)
         elif args.chi2_select or args.pca_select:
