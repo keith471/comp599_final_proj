@@ -5,6 +5,7 @@ from __future__ import print_function
 import sys
 
 from nltk.corpus import wordnet as wn
+import numpy as np
 
 # The idea is to extend a feature set by synonyms of all the words in the set
 
@@ -39,14 +40,21 @@ class WordNetVectorizer(object):
     def get_word_net_feature_vecs(self, docs):
         '''docs should be a 1d array of strings, where each string is all the contents of  a document'''
         all_words = self.vectorizer.get_feature_names()
+        print('%d different words in total' % len(all_words))
+        print('Getting features (wordnet synset or word if no synset) for all words')
         self.feat_to_idx = self.get_features(all_words)
+        print('Done getting features')
         # now, for each doc, we have to get a list of the doc's words
+        print('Getting a list of the words in each document')
         self.analyzer = self.vectorizer.build_analyzer()
         docs_as_words = []
         for doc in docs:
             docs_as_words.append(self.analyzer(doc))
+        print('Done getting words in each document')
+        print('Converting document word lists into features vectors')
         X_train = self.get_feature_vectors(docs_as_words)
-        return X_train
+        print('Done generating feature vectors')
+        return np.array(X_train)
 
     # need something that will vectorize docs_test in the same way
     def vec_test_docs(self, docs):
@@ -54,7 +62,7 @@ class WordNetVectorizer(object):
         for doc in docs:
             docs_as_words.append(self.analyzer(doc))
         X_test = self.get_feature_vectors(docs_as_words, test=True)
-        return X_test
+        return np.array(X_test)
 
     def get_feature_vec(self, words):
         vec = [0 for i in range(len(self.feat_to_idx))]
@@ -75,10 +83,12 @@ class WordNetVectorizer(object):
                 idx = self.feat_to_idx[word]
                 vec[idx] = vec[idx] + 1
             else:
-                synset = wn.synsets(word)[0]
-                if synset in feat_to_idx:
-                    idx = self.feat_to_idx[synset]
-                    vec[idx] = vec[idx] + 1
+                synsets = wn.synsets(word)
+                if len(synsets) > 0:
+                    synset = synsets[0]
+                    if synset in self.feat_to_idx:
+                        idx = self.feat_to_idx[synset]
+                        vec[idx] = vec[idx] + 1
         return vec
 
     def get_feature_vectors(self, docs_as_words, test=False):

@@ -1,0 +1,36 @@
+(lp1
+(S'Logistic Regression'
+p2
+cnumpy.core.multiarray
+scalar
+p3
+(cnumpy
+dtype
+p4
+(S'f8'
+I0
+I1
+tRp5
+(I3
+S'<'
+NNNI-1
+I-1
+I0
+tbS'\x04\xec(\xe9w\n\xe9?'
+tRp6
+tp7
+a(S'Linear SVM'
+p8
+g3
+(g5
+S'U\n\\\x01\xc2\xd7\xe7?'
+tRp9
+tp10
+a(S'Gaussian Naive Bayes'
+p11
+g3
+(g5
+S'\xa8\xbd7\x12\x8e\xb1\xc2?'
+tRp12
+tp13
+a.

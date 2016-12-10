@@ -69,10 +69,11 @@ print(__doc__)
 op.print_help()
 print()
 
-def loadVectors():
+# need
+def load_vectors():
     print("loading word2vec vectors...")
     t0 = time()
-    model = Word2Vec.load_word2vec_format('/Volumes/Seagate Backup Plus Drive/GoogleNews-vectors-negative300.bin', binary = True)
+    model = Word2Vec.load_word2vec_format('/Volumes/Seagate Backup Plus Drive/MacFilesThatICantFit/GoogleNews-vectors-negative300.bin', binary = True)
     loadTime = time() - t0
     print("word2vec vectors loaded in %0.3f seconds" % loadTime)
     print()
@@ -85,44 +86,62 @@ def loadVectors():
     print("trimmed memory in %0.3f seconds" % trimTime)
     print()
 
+    vec = model['hello']
+
+    print('type of vector')
+    print(type(vec))
+    print('vector')
+    print(vec)
+
+    sys.exit(1)
+
     return model
 
-def processDocument(doc, lowercase, lemmatize):
+# Need
+def process_document(doc, lowercase, remove_stop_words, lemmatize):
     ''' takes all text of a document and returns just the words (punctuation removed, other than apostrophes) '''
     # must remove punctuation as we have no word2vec vectors for them
     nopunc = doc.translate(None, string.punctuation)
     tokens =  word_tokenize(nopunc)
     if lowercase:
         tokens = [w.lower() for w in tokens]
+    if remove_stop_words:
+        tokens = [w for w in tokens if w not in stopwords.words('english')]
     if lemmatize:
         wnl = WordNetLemmatizer()
         tokens = [wnl.lemmatize(w) for w in tokens]
     return tokens
 
-def vectorize(X_train, model):
-    '''computes an array of word2vec feature vectors from an array of documents'''
+# need
+def vectorize(docs, model):
+    '''computes an array of word2vec-based feature vectors from an array of unprocessed documents'''
     X = []
-    maxDocLength = 0
-    for doc in X_train:
+    max_feat_vec_length = 0
+    for doc in docs:
         features = []
-        tokens = processDocument(doc, opts.lowercase, opts.lemmatize)
-        wordCount = 0
+        tokens = process_document(doc, opts.lowercase, opts.lemmatize)
         for token in tokens:
             if token in model:
-                features.append(model[token])
-                wordCount += 1
+                features += model[token].tolist()
         X.append(features)
-        if len(features) > maxDocLength:
-            maxDocLength = len(features)
+        if len(features) > max_feat_vec_length:
+            max_feat_vec_length = len(features)
+    return X, max_feat_vec_length
 
-    return X, maxDocLength
-
-def extend(X, maxDocLength):
+# need
+def extend(X, max_feat_vec_length):
     '''Exend any feature vectors shorter than the longest vector by zero vectors'''
+    # for each feature vector, extend it to max_feat_vec_length
+    print('Longest feature vector: %d features' % max_feat_vec_length)
     zeros = [0.0 for x in range(0, model.vector_size)]
-    for vector in X:
-        while len(vector) < maxDocLength:
-            vector.append(zeros)
+    for feat_vec in X:
+        print('Old feature vector length: %d' % len(feat_vec))
+        while len(feat_vec) < max_feat_vec_length:
+            feat_vec.append(zeros)
+        print('New feature vector length: %d' % len(feat_vec))
+        if len(feat_vec) != max_feat_vec_length:
+            print('Error extending feature vectors')
+            sys.exit(1)
 
 def benchmark(clf, X_train, y_train, X_test, y_test):
     print('_' * 80)

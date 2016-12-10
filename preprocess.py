@@ -9,6 +9,8 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from time import time
 
+from gensim.models.word2vec import Word2Vec
+
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 
@@ -121,8 +123,13 @@ def get_X_train(data, wn=False, max_n_gram=1, lowercase=True, lemmatize=False, r
             print('Extracting features from the test data using a count vectorizer')
         vectorizer = CountVectorizer(lowercase=lowercase, tokenizer=tokenizer, stop_words=stop_words, ngram_range=(1, max_n_gram))
         if wn:
+            print('Learning a vocabulary dictionary with a count vectorizer')
+            vectorizer.fit(data)
+            print('Done learning vocabulary dictionary')
             vectorizer = WordNetVectorizer(vectorizer)
+            print('Getting wordnet based feature vectors...')
             X_train = vectorizer.get_word_net_feature_vecs(data)
+            print('Done getting wordnet based feature vectors')
         else:
             X_train = vectorizer.fit_transform(data)
     duration = time() - t0
@@ -160,3 +167,83 @@ def get_frac(frac, all_X, all_y):
     unproc_X_train = all_X[:threshold]
     y_train = all_y[:threshold]
     return unproc_X_train, y_train
+
+# we need to write a function that will prepare feature vectors to be fed to the conv net
+# it will work as follows:
+# for each document, parse the words in the document, in order
+#   create an empty feature vector
+#   for each word in the document,
+
+################################################################################
+# word2vec preprocessing
+################################################################################
+
+def load_word2vec_vectors():
+    print("loading word2vec vectors...")
+    t0 = time()
+    model = Word2Vec.load_word2vec_format('/Volumes/Seagate Backup Plus Drive/MacFilesThatICantFit/GoogleNews-vectors-negative300.bin', binary = True)
+    loadTime = time() - t0
+    print("word2vec vectors loaded in %0.3f seconds" % loadTime)
+    print()
+
+    # done "training" the model; we can do the following to trim uneeded memory
+    t0 = time()
+    print("trimming model memory...")
+    model.init_sims(replace=True)
+    trimTime = time() - t0
+    print("trimmed memory in %0.3f seconds" % trimTime)
+    print()
+
+    vec = model['hello']
+
+    print('type of vector')
+    print(type(vec))
+    print('vector')
+    print(vec)
+
+    sys.exit(1)
+
+    return model
+
+def process_document(doc, lowercase, remove_stop_words, lemmatize):
+    ''' takes all text of a document and returns just the words (punctuation removed, other than apostrophes) '''
+    # must remove punctuation as we have no word2vec vectors for them
+    nopunc = doc.translate(None, string.punctuation)
+    tokens =  word_tokenize(nopunc)
+    if lowercase:
+        tokens = [w.lower() for w in tokens]
+    if remove_stop_words:
+        tokens = [w for w in tokens if w not in stopwords.words('english')]
+    if lemmatize:
+        wnl = WordNetLemmatizer()
+        tokens = [wnl.lemmatize(w) for w in tokens]
+    return tokens
+
+def word2vec_vectorize(docs, model):
+    '''computes an array of word2vec-based feature vectors from an array of unprocessed documents'''
+    X = []
+    max_feat_vec_length = 0
+    for doc in docs:
+        features = []
+        tokens = process_document(doc, opts.lowercase, opts.lemmatize)
+        for token in tokens:
+            if token in model:
+                features += model[token].tolist()
+        X.append(features)
+        if len(features) > max_feat_vec_length:
+            max_feat_vec_length = len(features)
+    return X, max_feat_vec_length
+
+def extend(X, max_feat_vec_length):
+    '''Exend any feature vectors shorter than the longest vector by zero vectors'''
+    # for each feature vector, extend it to max_feat_vec_length
+    print('Longest feature vector: %d features' % max_feat_vec_length)
+    zeros = [0.0 for x in range(0, model.vector_size)]
+    for feat_vec in X:
+        print('Old feature vector length: %d' % len(feat_vec))
+        while len(feat_vec) < max_feat_vec_length:
+            feat_vec.append(zeros)
+        print('New feature vector length: %d' % len(feat_vec))
+        if len(feat_vec) != max_feat_vec_length:
+            print('Error extending feature vectors')
+            sys.exit(1)

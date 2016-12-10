@@ -1,0 +1,416 @@
+python classify.py --all_categories --verbose --lowercase --lemmatize --remove_stop_words --max_n_gram 1 --pca_mass_compute --chi2_select 70000
+classification
+usage: classify.py [-h] [--all_categories] [--filter] [--lowercase]
+                   [--lemmatize] [--remove_stop_words] [--tfidf]
+                   [--max_n_gram MAX_N_GRAM] [--verbose] [--frac FRAC]
+                   [--clf CLF] [--wn] [--chi2_select CHI2_SELECT]
+                   [--chi2_select_range CHI2_SELECT_RANGE CHI2_SELECT_RANGE CHI2_SELECT_RANGE]
+                   [--pca_select PCA_SELECT]
+                   [--pca_select_range PCA_SELECT_RANGE PCA_SELECT_RANGE PCA_SELECT_RANGE]
+                   [--confusion_matrix] [--top10] [--report]
+                   [--pca_mass_compute]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --all_categories      Whether to use all categories or not.
+  --filter              Remove newsgroup information that is easily overfit:
+                        headers, signatures, and quoting.
+  --lowercase           If set, the documents will be converted to lowercase.
+  --lemmatize           If set, all words will be lemmatized.
+  --remove_stop_words   If set, sklearn's list of English stop words will be
+                        removed.
+  --tfidf               If set, tf-idf term weighting will be used.
+  --max_n_gram MAX_N_GRAM
+                        The maximum n-gram size to be used.
+  --verbose             Print lots of info to sdtout!
+  --frac FRAC           A float between 0 and 1 indicating the fraction of
+                        training data to actually train on
+  --clf CLF             The classifier to use if performing cross-validation
+  --wn                  If set, WordNet will be used to develop the feature
+                        vectors
+  --chi2_select CHI2_SELECT
+                        Select some number of features using a chi-squared
+                        test
+  --chi2_select_range CHI2_SELECT_RANGE CHI2_SELECT_RANGE CHI2_SELECT_RANGE
+                        Three positive integers, start, end and range,
+                        specifying the number of dimensions to select using a
+                        chi2 test. Cross-validation will be used to select the
+                        best number of dimensions within the range
+  --pca_select PCA_SELECT
+                        Select some number of features using principal
+                        component analysis
+  --pca_select_range PCA_SELECT_RANGE PCA_SELECT_RANGE PCA_SELECT_RANGE
+                        Same as --chi2_select_range except that PCA will be
+                        used instead of a chi2 test
+  --confusion_matrix    Print the confusion matrix.
+  --top10               Print ten most discriminative terms per class for
+                        every classifier.
+  --report              Print a detailed classification report.
+  --pca_mass_compute    use to get a bunch of PCA results overnight :-)
+
+Loading 20 newsgroups dataset for categories:
+all
+
+data loaded
+11314 documents - 22.055MB (training set)
+7532 documents - 13.801MB (test set)
+20 categories
+
+Final train and test set sizes
+Train set size: 11314 documents
+Test set size: 7532 documents
+
+Using n-grams of up to 1 words in length
+Converting all text to lowercase
+Lemmatizing all words
+Removing English stop words
+Extracting features from the test data using a count vectorizer
+done in 67.604473s at 0.326MB/s
+n_samples: 11314, n_features: 181421
+
+Extracting features from the test data using the same vectorizer
+done in 38.099093s at 0.362MB/s
+n_samples: 7532, n_features: 181421
+
+Final dataset shapes
+X_train:
+(11314, 181421)
+y_train
+(11314,)
+X_test
+(7532, 181421)
+y_test
+(7532,)
+
+Selecting 70000 features using a chi-squared test
+Extracting 70000 best features by a chi-squared test
+done in 0.354697s
+n_samples: 11314, n_features: 70000
+
+Shape of X_train after chi-squared selection of features
+(11314, 70000)
+Shapte of X_test after chi-squared selection of features
+(7532, 70000)
+Selecting 300 features using PCA
+Shape of X_train
+(11314, 300)
+Shapte of X_test
+(7532, 300)
+--------------------------------------------------------------------------------
+Logistic Regression
+________________________________________________________________________________
+----------------------------------------
+Benchmarking LogisticRegression
+________________________________________
+Training
+Finished training in 192.555361s
+Making predictions
+Finished making predictions in 0.013034s
+Accuracy: 0.692512
+
+--------------------------------------------------------------------------------
+Linear SVM
+________________________________________________________________________________
+----------------------------------------
+Benchmarking LinearSVC
+________________________________________
+Training
+Finished training in 155.317825s
+Making predictions
+Finished making predictions in 0.009466s
+Accuracy: 0.680297
+
+--------------------------------------------------------------------------------
+Gaussian Naive Bayes
+________________________________________________________________________________
+----------------------------------------
+Benchmarking GaussianNB
+________________________________________
+Training
+Finished training in 0.081724s
+Making predictions
+Finished making predictions in 0.521928s
+Accuracy: 0.156267
+
+classifier	accuracy
+Logistic Regression	0.692511949018
+Linear SVM	0.68029739777
+Gaussian Naive Bayes	0.156266595858
+saving data as postprocessed_data/accuracies_300_feats_1481091107.pkl
+Selecting 400 features using PCA
+Shape of X_train
+(11314, 400)
+Shapte of X_test
+(7532, 400)
+--------------------------------------------------------------------------------
+Logistic Regression
+________________________________________________________________________________
+----------------------------------------
+Benchmarking LogisticRegression
+________________________________________
+Training
+Finished training in 253.935408s
+Making predictions
+Finished making predictions in 0.017324s
+Accuracy: 0.718800
+
+--------------------------------------------------------------------------------
+Linear SVM
+________________________________________________________________________________
+----------------------------------------
+Benchmarking LinearSVC
+________________________________________
+Training
+Finished training in 163.544330s
+Making predictions
+Finished making predictions in 0.011256s
+Accuracy: 0.691450
+
+--------------------------------------------------------------------------------
+Gaussian Naive Bayes
+________________________________________________________________________________
+----------------------------------------
+Benchmarking GaussianNB
+________________________________________
+Training
+Finished training in 0.092401s
+Making predictions
+Finished making predictions in 0.674073s
+Accuracy: 0.150690
+
+classifier	accuracy
+Logistic Regression	0.718799787573
+Linear SVM	0.691449814126
+Gaussian Naive Bayes	0.150690387679
+saving data as postprocessed_data/accuracies_400_feats_1481092057.pkl
+Selecting 500 features using PCA
+Shape of X_train
+(11314, 500)
+Shapte of X_test
+(7532, 500)
+--------------------------------------------------------------------------------
+Logistic Regression
+________________________________________________________________________________
+----------------------------------------
+Benchmarking LogisticRegression
+________________________________________
+Training
+Finished training in 263.928255s
+Making predictions
+Finished making predictions in 0.031628s
+Accuracy: 0.728492
+
+--------------------------------------------------------------------------------
+Linear SVM
+________________________________________________________________________________
+----------------------------------------
+Benchmarking LinearSVC
+________________________________________
+Training
+Finished training in 169.560031s
+Making predictions
+Finished making predictions in 0.013775s
+Accuracy: 0.702337
+
+--------------------------------------------------------------------------------
+Gaussian Naive Bayes
+________________________________________________________________________________
+----------------------------------------
+Benchmarking GaussianNB
+________________________________________
+Training
+Finished training in 0.105930s
+Making predictions
+Finished making predictions in 0.808914s
+Accuracy: 0.148566
+
+classifier	accuracy
+Logistic Regression	0.728491768455
+Linear SVM	0.70233669676
+Gaussian Naive Bayes	0.148566117897
+saving data as postprocessed_data/accuracies_500_feats_1481093097.pkl
+Selecting 750 features using PCA
+Shape of X_train
+(11314, 750)
+Shapte of X_test
+(7532, 750)
+--------------------------------------------------------------------------------
+Logistic Regression
+________________________________________________________________________________
+----------------------------------------
+Benchmarking LogisticRegression
+________________________________________
+Training
+Finished training in 376.783040s
+Making predictions
+Finished making predictions in 0.019206s
+Accuracy: 0.753850
+
+--------------------------------------------------------------------------------
+Linear SVM
+________________________________________________________________________________
+----------------------------------------
+Benchmarking LinearSVC
+________________________________________
+Training
+Finished training in 221.748075s
+Making predictions
+Finished making predictions in 0.018202s
+Accuracy: 0.712693
+
+--------------------------------------------------------------------------------
+Gaussian Naive Bayes
+________________________________________________________________________________
+----------------------------------------
+Benchmarking GaussianNB
+________________________________________
+Training
+Finished training in 0.162143s
+Making predictions
+Finished making predictions in 1.197784s
+Accuracy: 0.157196
+
+classifier	accuracy
+Logistic Regression	0.75385023898
+Linear SVM	0.712692511949
+Gaussian Naive Bayes	0.157195963887
+saving data as postprocessed_data/accuracies_750_feats_1481094466.pkl
+Selecting 1000 features using PCA
+Shape of X_train
+(11314, 1000)
+Shapte of X_test
+(7532, 1000)
+--------------------------------------------------------------------------------
+Logistic Regression
+________________________________________________________________________________
+----------------------------------------
+Benchmarking LogisticRegression
+________________________________________
+Training
+Finished training in 514.468292s
+Making predictions
+Finished making predictions in 0.027542s
+Accuracy: 0.759692
+
+--------------------------------------------------------------------------------
+Linear SVM
+________________________________________________________________________________
+----------------------------------------
+Benchmarking LinearSVC
+________________________________________
+Training
+Finished training in 286.718580s
+Making predictions
+Finished making predictions in 0.023117s
+Accuracy: 0.724907
+
+--------------------------------------------------------------------------------
+Gaussian Naive Bayes
+________________________________________________________________________________
+----------------------------------------
+Benchmarking GaussianNB
+________________________________________
+Training
+Finished training in 0.211702s
+Making predictions
+Finished making predictions in 1.611767s
+Accuracy: 0.150823
+
+classifier	accuracy
+Logistic Regression	0.759691980882
+Linear SVM	0.724907063197
+Gaussian Naive Bayes	0.150823154541
+saving data as postprocessed_data/accuracies_1000_feats_1481096208.pkl
+Selecting 1500 features using PCA
+Shape of X_train
+(11314, 1500)
+Shapte of X_test
+(7532, 1500)
+--------------------------------------------------------------------------------
+Logistic Regression
+________________________________________________________________________________
+----------------------------------------
+Benchmarking LogisticRegression
+________________________________________
+Training
+Finished training in 750.857102s
+Making predictions
+Finished making predictions in 0.036550s
+Accuracy: 0.776155
+
+--------------------------------------------------------------------------------
+Linear SVM
+________________________________________________________________________________
+----------------------------------------
+Benchmarking LinearSVC
+________________________________________
+Training
+Finished training in 424.185240s
+Making predictions
+Finished making predictions in 0.034942s
+Accuracy: 0.741237
+
+--------------------------------------------------------------------------------
+Gaussian Naive Bayes
+________________________________________________________________________________
+----------------------------------------
+Benchmarking GaussianNB
+________________________________________
+Training
+Finished training in 0.308146s
+Making predictions
+Finished making predictions in 2.383760s
+Accuracy: 0.138609
+
+classifier	accuracy
+Logistic Regression	0.776155071694
+Linear SVM	0.741237387148
+Gaussian Naive Bayes	0.138608603293
+saving data as postprocessed_data/accuracies_1500_feats_1481098344.pkl
+Selecting 2000 features using PCA
+Shape of X_train
+(11314, 2000)
+Shapte of X_test
+(7532, 2000)
+--------------------------------------------------------------------------------
+Logistic Regression
+________________________________________________________________________________
+----------------------------------------
+Benchmarking LogisticRegression
+________________________________________
+Training
+Finished training in 1028.388065s
+Making predictions
+Finished making predictions in 0.049153s
+Accuracy: 0.784785
+
+--------------------------------------------------------------------------------
+Linear SVM
+________________________________________________________________________________
+----------------------------------------
+Benchmarking LinearSVC
+________________________________________
+Training
+Finished training in 552.684425s
+Making predictions
+Finished making predictions in 0.045418s
+Accuracy: 0.746017
+
+--------------------------------------------------------------------------------
+Gaussian Naive Bayes
+________________________________________________________________________________
+----------------------------------------
+Benchmarking GaussianNB
+________________________________________
+Training
+Finished training in 0.412257s
+Making predictions
+Finished making predictions in 3.173183s
+Accuracy: 0.143123
+
+classifier	accuracy
+Logistic Regression	0.784784917685
+Linear SVM	0.746016994158
+Gaussian Naive Bayes	0.14312267658
+saving data as postprocessed_data/accuracies_2000_feats_1481101158.pkl
+Selecting 5000 features using PCA

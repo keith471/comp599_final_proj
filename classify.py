@@ -16,7 +16,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn import metrics
 from sklearn.decomposition import PCA
 
-from preprocess import get_data, get_X_train, get_X_test, get_frac
+from preprocess import get_data, get_X_train, get_X_test, get_frac, load_word2vec_vectors, word2vec_vectorize
 from utils import benchmark
 from cross_validation import CrossValidate
 from postprocess import to_pickle
@@ -74,6 +74,9 @@ parser.add_argument('--clf',
 parser.add_argument('--wn',
                     action='store_true',
                     help='If set, WordNet will be used to develop the feature vectors')
+parser.add_argument('--word2vec',
+                    action='store_true',
+                    help='If set, word2vec feature vectors will be used to train a convolutional neural net')
 parser.add_argument('--chi2_select',
                     action='store', type=int,
                     help='Select some number of features using a chi-squared test')
@@ -149,14 +152,6 @@ def select_pca(X_train, y_train, k):
     # update X_train
     return pca.transform(X_train), pca
 
-'''
-def select_chi2_and_revec(X_train, y_train, X_test, k):
-    Select k best features according to chi-squared test and revetorize X_test
-    X_train, ch2 = select_chi2(X_train, y_train, k)
-    X_test = ch2.transform(X_test)
-    return X_train, X_test
-'''
-
 def select_k_and_revec(X_train, y_train, X_test, k, chi2):
     '''Select k best features according to either a chi-squared test or PCA and revetorize X_test'''
     if chi2:
@@ -166,27 +161,6 @@ def select_k_and_revec(X_train, y_train, X_test, k, chi2):
         X_train, pca = select_pca(X_train, y_train, k)
         X_test = pca.transform(X_test)
     return X_train, X_test
-
-'''
-def get_feature_set_scores(X_train, y_train, clf, cv_range):
-    Get accuracies for a range of numbers of features. For each number of features,
-    we cross validate to determine the accuracy.
-    Returns a an array of tuples: (# features used, avg prediction accuracy)
-    start, end, step = cv_range
-    rng = range(start, end+1, step)
-    arr = []
-    best_acc = 0.
-    best_num_feats = 0
-    for num_feats in rng:
-        X_t, _ = select_chi2(X_train, y_train, num_feats)
-        cross_validator = CrossValidate(X_t, y_train, clf)
-        acc = cross_validator.cross_validate()
-        if acc > best_acc:
-            best_acc = acc
-            best_num_feats = num_feats
-        arr.append((num_feats, acc))
-    return arr, (best_num_feats, best_acc)
-'''
 
 def get_feature_set_scores(X_train, y_train, clf, cv_range, chi2):
     '''Get accuracies for a range of numbers of features. For each number of features,
@@ -266,6 +240,9 @@ if __name__ == '__main__':
     all_unproc_X_train, all_unproc_X_test = data_train.data, data_test.data
     all_y_train, y_test = data_train.target, data_test.target
 
+    if args.word2vec:
+        word2vec_model = load_word2vec_vectors()
+
     if args.frac:
         unproc_X_train, y_train = get_frac(args.frac, all_unproc_X_train, all_y_train)
     else:
@@ -277,11 +254,23 @@ if __name__ == '__main__':
     print('Test set size: %d documents' % len(all_unproc_X_test))
     print()
 
-    # turn the unprocessed training and testing data into feature vectors
-    X_train, vectorizer = get_X_train(unproc_X_train, wn=args.wn, max_n_gram=args.max_n_gram, lowercase=args.lowercase, lemmatize=args.lemmatize, remove_stop_words=args.remove_stop_words, tfidf=args.tfidf)
-
-    # use the same vectorizer to vectorize the test data
-    X_test = get_X_test(all_unproc_X_test, vectorizer, wn=args.wn)
+    if word2vec:
+        X_train, max_feat_vec_length_train = word2vec_vectorize(X_train, word2vec_model)
+        X_test, max_feat_vec_length_test = word2vec_vectorize(X_test, word2vec_model)
+        max_feat_vec_length = max(max_feat_vec_length_train, max_feat_vec_length_test)
+        print('Largest feature vector consists of %d features' % max_feat_vec_length)
+        print('Extending other feature vectors to this length for both train and test data')
+        extend(X_train, max_feat_vec_length)
+        extend(X_test, max_feat_vec_length)
+        print('done')
+        print()
+        X_train = np.array(X_train)
+        X_test = np.array(X_test)
+    else:
+        # turn the unprocessed training and testing data into feature vectors
+        X_train, vectorizer = get_X_train(unproc_X_train, wn=args.wn, max_n_gram=args.max_n_gram, lowercase=args.lowercase, lemmatize=args.lemmatize, remove_stop_words=args.remove_stop_words, tfidf=args.tfidf)
+        # use the same vectorizer to vectorize the test data
+        X_test = get_X_test(all_unproc_X_test, vectorizer, wn=args.wn)
 
     print('Final dataset shapes')
     print('X_train:')
@@ -349,7 +338,7 @@ if __name__ == '__main__':
             print('Shapte of X_test after chi-squared selection of features')
             print(X_test_chi2.shape)
             # the number of features to select with PCA
-            all_num_feats = [300, 400, 500, 750, 1000, 1500, 2000, 5000, 10000, 15000, 20000, 30000, 40000, 50000]
+            all_num_feats = [300, 400, 500, 750, 1000, 1500, 2000, 5000, 10000, 15000, 20000, 30000]
             results = []
             for num_feats in all_num_feats:
                 print('Selecting %d features using PCA' % num_feats)
@@ -405,6 +394,33 @@ if __name__ == '__main__':
                 print('Shapte of X_test after chi-squared selection of features')
                 print(X_test.shape)
                 X_train, X_test = select_k_and_revec(X_train, y_train, X_test, args.pca_select, False)
+        elif args.word2vec:
+            # TODO train and classify using a convolutional neural network
+            # e.g.
+            clf = Classifier(
+                layers=[
+                    Convolution('Rectifier', channels=12, kernel_shape=(3, 3), border_mode='full'),
+                    Convolution('Rectifier', channels=8, kernel_shape=(3, 3), border_mode='valid'),
+                    Layer('Rectifier', units=64),
+                    Layer('Softmax')],
+                learning_rate=0.002,
+                valid_size=0.2,
+                n_stable=10,
+                verbose=True)
+
+            # convert data to ndarrays for training
+            X_train = np.array(X_train)
+            X_test = np.array(X_test)
+            y_train = np.array(y_train)
+            y_test = np.array(y_test)
+
+            clfDesc, pred, score = benchmark(clf, X_train, y_train, X_test, y_test)
+            print('=' * 80)
+            print("Summary:")
+            print('_' * 80)
+            print("Accuracy of %s using word2vec: %f" % (clfDesc, score))
+            print()
+            pass
         else:
             print('Using all features')
 
