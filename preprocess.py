@@ -8,10 +8,13 @@ from sklearn.datasets import fetch_20newsgroups
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from time import time
+import string
+import cPickle as pickle
 
 from gensim.models.word2vec import Word2Vec
 
 from nltk.stem import WordNetLemmatizer
+from nltk.stem.porter import PorterStemmer
 from nltk.tokenize import word_tokenize
 
 from wordnet import WordNetVectorizer
@@ -83,13 +86,26 @@ def get_data(all_categories=True, filtered=False, verbose=True):
     return categories, data_train, data_test
 
 class LemmaTokenizer(object):
-    def __init__(self):
+    def __init__(self, nopunc):
         self.wnl = WordNetLemmatizer()
+        self.nopunc = nopunc
 
     def __call__(self, doc):
+        if self.nopunc:
+            doc = ''.join([i if i not in string.punctuation else '' for i in doc])
         return [self.wnl.lemmatize(word) for word in word_tokenize(doc)]
 
-def get_X_train(data, wn=False, max_n_gram=1, lowercase=True, lemmatize=False, remove_stop_words=True, tfidf=False, verbose=True):
+class StemTokenizer(object):
+    def __init__(self, nopunc):
+        self.stemmer = PorterStemmer()
+        self.nopunc = nopunc
+
+    def __call__(self, doc):
+        if self.nopunc:
+            doc = ''.join([i if i not in string.punctuation else '' for i in doc])
+        return [self.stemmer.stem(word) for word in word_tokenize(doc)]
+
+def get_X_train(data, wn=False, max_n_gram=1, lowercase=True, nopunc=False, lemmatize=False, stem=False, remove_stop_words=True, tfidf=False, verbose=True):
 
     if verbose:
         print('Using n-grams of up to %d words in length' % max_n_gram)
@@ -98,9 +114,13 @@ def get_X_train(data, wn=False, max_n_gram=1, lowercase=True, lemmatize=False, r
         print('Converting all text to lowercase')
 
     if lemmatize:
-        tokenizer = LemmaTokenizer()
+        tokenizer = LemmaTokenizer(nopunc)
         if verbose:
             print('Lemmatizing all words')
+    elif stem:
+        tokenizer = StemTokenizer(nopunc)
+        if verbose:
+            print('Stemming all words')
     else:
         tokenizer = None
 
@@ -205,7 +225,7 @@ def load_word2vec_vectors():
 
     return model
 
-def process_document(doc, lowercase, remove_stop_words, lemmatize):
+def process_document(doc, lowercase, remove_stop_words, lemmatize, stem):
     ''' takes all text of a document and returns just the words (punctuation removed, other than apostrophes) '''
     # must remove punctuation as we have no word2vec vectors for them
     nopunc = doc.translate(None, string.punctuation)
@@ -217,6 +237,9 @@ def process_document(doc, lowercase, remove_stop_words, lemmatize):
     if lemmatize:
         wnl = WordNetLemmatizer()
         tokens = [wnl.lemmatize(w) for w in tokens]
+    if stem:
+        stemmer = PorterStemmer()
+        tokens = [stemmer.stem(w) for w in tokens]
     return tokens
 
 def word2vec_vectorize(docs, model):
@@ -247,3 +270,9 @@ def extend(X, max_feat_vec_length):
         if len(feat_vec) != max_feat_vec_length:
             print('Error extending feature vectors')
             sys.exit(1)
+
+def load_pickle(name):
+    name = 'postprocessed_data/' + name
+    with open(name, 'rb') as f:
+        p = pickle.load(f)
+    return p

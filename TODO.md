@@ -1,6 +1,4 @@
 # TODO
 
-- Select a baseline model
-- Get results for the baseline using chi2 and PCA
-
-- develop conv net using word2vec features and train this for results as well
+- line 93 in cnn.py
+- Rather than selecting the most common words for conv net method, try using PCA to rank the most relevant words

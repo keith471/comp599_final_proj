@@ -1,2 +1,4 @@
 *.pyc
 env/
+glove.6B/
+20_newsgroup/

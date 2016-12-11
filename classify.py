@@ -16,7 +16,7 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn import metrics
 from sklearn.decomposition import PCA
 
-from preprocess import get_data, get_X_train, get_X_test, get_frac, load_word2vec_vectors, word2vec_vectorize
+from preprocess import get_data, get_X_train, get_X_test, get_frac, load_word2vec_vectors, word2vec_vectorize, load_pickle
 from utils import benchmark
 from cross_validation import CrossValidate
 from postprocess import to_pickle
@@ -52,9 +52,15 @@ parser.add_argument('--lowercase',
 parser.add_argument('--lemmatize',
                     action='store_true', default=False,
                     help='If set, all words will be lemmatized.')
+parser.add_argument('--stem',
+                    action='store_true', default=False,
+                    help='If set, all words will be stemmed using a porter stemmer.')
 parser.add_argument('--remove_stop_words',
                     action='store_true', default=False,
                     help='If set, sklearn\'s list of English stop words will be removed.')
+parser.add_argument('--nopunc',
+                    action='store_true', default=False,
+                    help='If set, all punctuation will be removed from documents.')
 parser.add_argument('--tfidf',
                     action='store_true', default=False,
                     help='If set, tf-idf term weighting will be used.')
@@ -104,6 +110,12 @@ parser.add_argument('--report',
 parser.add_argument('--pca_mass_compute',
                     action='store_true',
                     help='use to get a bunch of PCA results overnight :-)')
+parser.add_argument('--save_pca',
+                    action='store_true',
+                    help='use to save a bunch of PCA objects overnight :-)')
+parser.add_argument('--test',
+                    action='store_true',
+                    help='run the code in the test space')
 
 args = parser.parse_args()
 
@@ -151,6 +163,11 @@ def select_pca(X_train, y_train, k):
     pca.fit(X_train)
     # update X_train
     return pca.transform(X_train), pca
+
+def get_trained_pca(X_train, k):
+    pca = PCA(n_components=k)
+    pca.fit(X_train)
+    return pca
 
 def select_k_and_revec(X_train, y_train, X_test, k, chi2):
     '''Select k best features according to either a chi-squared test or PCA and revetorize X_test'''
@@ -254,7 +271,7 @@ if __name__ == '__main__':
     print('Test set size: %d documents' % len(all_unproc_X_test))
     print()
 
-    if word2vec:
+    if args.word2vec:
         X_train, max_feat_vec_length_train = word2vec_vectorize(X_train, word2vec_model)
         X_test, max_feat_vec_length_test = word2vec_vectorize(X_test, word2vec_model)
         max_feat_vec_length = max(max_feat_vec_length_train, max_feat_vec_length_test)
@@ -268,7 +285,7 @@ if __name__ == '__main__':
         X_test = np.array(X_test)
     else:
         # turn the unprocessed training and testing data into feature vectors
-        X_train, vectorizer = get_X_train(unproc_X_train, wn=args.wn, max_n_gram=args.max_n_gram, lowercase=args.lowercase, lemmatize=args.lemmatize, remove_stop_words=args.remove_stop_words, tfidf=args.tfidf)
+        X_train, vectorizer = get_X_train(unproc_X_train, wn=args.wn, max_n_gram=args.max_n_gram, lowercase=args.lowercase, nopunc=args.nopunc, lemmatize=args.lemmatize, stem=args.stem, remove_stop_words=args.remove_stop_words, tfidf=args.tfidf)
         # use the same vectorizer to vectorize the test data
         X_test = get_X_test(all_unproc_X_test, vectorizer, wn=args.wn)
 
@@ -282,6 +299,47 @@ if __name__ == '__main__':
     print('y_test')
     print(y_test.shape)
     print()
+
+    # fit and save PCA objects for later use
+    if args.save_pca:
+        # select the first 40000 features using a chi-squared test, then subsequently select a varying amount
+        # of features by PCA and run all three learners on the results and save their accuracies
+        print('Selecting %d features using a chi-squared test' % args.chi2_select)
+        X_train_chi2, X_test_chi2 = select_k_and_revec(X_train, y_train, X_test, args.chi2_select, True)
+        X_train_chi2 = X_train_chi2.toarray()
+        X_test_chi2 = X_test_chi2.toarray()
+        to_pickle('X_train_chi2_40000', X_train_chi2, with_time=False)
+        to_pickle('X_test_chi2_40000', X_test_chi2, with_time=False)
+        print('Shape of X_train after chi-squared selection of features')
+        print(X_train_chi2.shape)
+        print('Shapte of X_test after chi-squared selection of features')
+        print(X_test_chi2.shape)
+        # the number of features to select with PCA
+        all_num_feats = [300, 400, 500, 750, 1000, 1500, 2000, 5000, 10000, 15000, 20000, 25000, 30000, 35000]
+        results = []
+        for num_feats in all_num_feats:
+            print('Selecting %d features using PCA' % num_feats)
+            pca = get_trained_pca(X_train_chi2, num_feats)
+            # pickle the current pca
+            name = 'pca_' + str(num_feats) + '_feats'
+            to_pickle(name, pca, with_time=False)
+
+        print('Done saving PCA objects')
+        sys.exit(0)
+
+    if args.test:
+        # put test code here
+        pca, X_train, X_test = load_pickle('pca_300_feats_1481437380.pkl')
+        print('before')
+        print(X_train[0])
+        print()
+        X_train = pca.transform(X_train)
+        print('after')
+        print(X_train[0])
+        print(len(X_train[0]))
+        print(pca.components_)
+
+        sys.exit(0)
 
     ############################################################################
     # benchmark classifier(s)
