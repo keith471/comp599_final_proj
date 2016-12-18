@@ -37,12 +37,12 @@ class WordNetVectorizer(object):
     def __init__(self, count_vectorizer):
         self.vectorizer = count_vectorizer
 
-    def get_word_net_feature_vecs(self, docs):
+    def get_word_net_feature_vecs(self, docs, ignore=False):
         '''docs should be a 1d array of strings, where each string is all the contents of  a document'''
         all_words = self.vectorizer.get_feature_names()
         print('%d different words in total' % len(all_words))
         print('Getting features (wordnet synset or word if no synset) for all words')
-        self.feat_to_idx = self.get_features(all_words)
+        self.feat_to_idx = self.get_features(all_words, ignore)
         print('Done getting features')
         # now, for each doc, we have to get a list of the doc's words
         print('Getting a list of the words in each document')
@@ -61,9 +61,10 @@ class WordNetVectorizer(object):
         docs_as_words = []
         for doc in docs:
             docs_as_words.append(self.analyzer(doc))
-        X_test = self.get_feature_vectors(docs_as_words, test=True)
+        X_test = self.get_feature_vectors(docs_as_words)
         return np.array(X_test)
 
+    '''
     def get_feature_vec(self, words):
         vec = [0 for i in range(len(self.feat_to_idx))]
         for word in words:
@@ -74,9 +75,9 @@ class WordNetVectorizer(object):
                 idx = self.feat_to_idx[synset]
             vec[idx] = vec[idx] + 1
         return vec
+    '''
 
-    def get_test_feature_vec(self, words):
-        '''same as get_feature_vec except that a word or its synset might not be in the dictionary'''
+    def get_feature_vec(self, words):
         vec = [0 for i in range(len(self.feat_to_idx))]
         for word in words:
             if word in self.feat_to_idx:
@@ -91,24 +92,22 @@ class WordNetVectorizer(object):
                         vec[idx] = vec[idx] + 1
         return vec
 
-    def get_feature_vectors(self, docs_as_words, test=False):
+    def get_feature_vectors(self, docs_as_words):
         vecs = []
         for words in docs_as_words:
-            if not test:
-                # training
                 vecs.append(self.get_feature_vec(words))
-            else:
-                # testing
-                vecs.append(self.get_test_feature_vec(words))
         return vecs
 
-    def get_features(self, words):
+    def get_features(self, words, ignore):
         feat_to_idx = {}
         idx = 0
         for word in words:
             synsets = wn.synsets(word)
             if len(synsets) == 0:
-                feat = word
+                if ignore:
+                    continue
+                else:
+                    feat = word
             else:
                 feat = synsets[0]
             if feat not in feat_to_idx:

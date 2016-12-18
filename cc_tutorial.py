@@ -22,7 +22,7 @@ from keras.layers import Conv1D, MaxPooling1D, Embedding
 from keras.models import Model
 import sys
 
-BASE_DIR = ''
+BASE_DIR = './'
 GLOVE_DIR = BASE_DIR + '/glove.6B/'
 TEXT_DATA_DIR = BASE_DIR + '/20_newsgroup/'
 # consider

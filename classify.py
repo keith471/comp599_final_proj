@@ -39,6 +39,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(mess
 
 # parse commandline arguments
 parser = ArgumentParser()
+
+# generic preprocessing options
 parser.add_argument('--all_categories',
                     action='store_true', default=False,
                     help='Whether to use all categories or not.')
@@ -70,19 +72,25 @@ parser.add_argument('--max_n_gram',
 parser.add_argument('--verbose',
                     action='store_true',
                     help='Print lots of info to sdtout!')
-parser.add_argument('--frac',
-                    action='store', type=float,
-                    help='A float between 0 and 1 indicating the fraction of training '
-                    'data to actually train on')
+
+# use if cross validating
 parser.add_argument('--clf',
                     action='store', type=str,
                     help='The classifier to use if performing cross-validation')
+
+# WordNet
 parser.add_argument('--wn',
                     action='store_true',
                     help='If set, WordNet will be used to develop the feature vectors')
+parser.add_argument('--ignore',
+                    action='store_true',
+                    help='If set, will ignore tokens that have no synset')
+
 parser.add_argument('--word2vec',
                     action='store_true',
                     help='If set, word2vec feature vectors will be used to train a convolutional neural net')
+
+# chi-squared and PCA
 parser.add_argument('--chi2_select',
                     action='store', type=int,
                     help='Select some number of features using a chi-squared test')
@@ -97,6 +105,14 @@ parser.add_argument('--pca_select',
 parser.add_argument('--pca_select_range',
                     action='store', type=int, nargs=3,
                     help='Same as --chi2_select_range except that PCA will be used instead of a chi2 test')
+parser.add_argument('--pca_mass_compute',
+                    action='store_true',
+                    help='use to get a bunch of PCA results overnight :-)')
+parser.add_argument('--save_pca',
+                    action='store_true',
+                    help='use to save a bunch of PCA objects overnight :-)')
+
+# Extraneous options
 parser.add_argument('--confusion_matrix',
                     action='store_true',
                     help='Print the confusion matrix.')
@@ -107,12 +123,12 @@ parser.add_argument('--top10',
 parser.add_argument('--report',
                     action='store_true',
                     help='Print a detailed classification report.')
-parser.add_argument('--pca_mass_compute',
-                    action='store_true',
-                    help='use to get a bunch of PCA results overnight :-)')
-parser.add_argument('--save_pca',
-                    action='store_true',
-                    help='use to save a bunch of PCA objects overnight :-)')
+
+# Useful for testing things
+parser.add_argument('--frac',
+                    action='store', type=float,
+                    help='A float between 0 and 1 indicating the fraction of training '
+                    'data to actually train on')
 parser.add_argument('--test',
                     action='store_true',
                     help='run the code in the test space')
@@ -285,7 +301,7 @@ if __name__ == '__main__':
         X_test = np.array(X_test)
     else:
         # turn the unprocessed training and testing data into feature vectors
-        X_train, vectorizer = get_X_train(unproc_X_train, wn=args.wn, max_n_gram=args.max_n_gram, lowercase=args.lowercase, nopunc=args.nopunc, lemmatize=args.lemmatize, stem=args.stem, remove_stop_words=args.remove_stop_words, tfidf=args.tfidf)
+        X_train, vectorizer = get_X_train(unproc_X_train, wn=args.wn, ignore=args.ignore, max_n_gram=args.max_n_gram, lowercase=args.lowercase, nopunc=args.nopunc, lemmatize=args.lemmatize, stem=args.stem, remove_stop_words=args.remove_stop_words, tfidf=args.tfidf)
         # use the same vectorizer to vectorize the test data
         X_test = get_X_test(all_unproc_X_test, vectorizer, wn=args.wn)
 
@@ -306,10 +322,10 @@ if __name__ == '__main__':
         # of features by PCA and run all three learners on the results and save their accuracies
         print('Selecting %d features using a chi-squared test' % args.chi2_select)
         X_train_chi2, X_test_chi2 = select_k_and_revec(X_train, y_train, X_test, args.chi2_select, True)
-        X_train_chi2 = X_train_chi2.toarray()
-        X_test_chi2 = X_test_chi2.toarray()
         to_pickle('X_train_chi2_40000', X_train_chi2, with_time=False)
         to_pickle('X_test_chi2_40000', X_test_chi2, with_time=False)
+        X_train_chi2 = X_train_chi2.toarray()
+        X_test_chi2 = X_test_chi2.toarray()
         print('Shape of X_train after chi-squared selection of features')
         print(X_train_chi2.shape)
         print('Shapte of X_test after chi-squared selection of features')
@@ -329,15 +345,10 @@ if __name__ == '__main__':
 
     if args.test:
         # put test code here
-        pca, X_train, X_test = load_pickle('pca_300_feats_1481437380.pkl')
-        print('before')
-        print(X_train[0])
-        print()
+        X_train = load_pickle('X_train_chi2_40000.pkl')
+        X_train = X_train.toarray()
+        pca = load_pickle('pca_300_feats.pkl')
         X_train = pca.transform(X_train)
-        print('after')
-        print(X_train[0])
-        print(len(X_train[0]))
-        print(pca.components_)
 
         sys.exit(0)
 

@@ -16,6 +16,7 @@ from gensim.models.word2vec import Word2Vec
 from nltk.stem import WordNetLemmatizer
 from nltk.stem.porter import PorterStemmer
 from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
 
 from wordnet import WordNetVectorizer
 
@@ -105,7 +106,7 @@ class StemTokenizer(object):
             doc = ''.join([i if i not in string.punctuation else '' for i in doc])
         return [self.stemmer.stem(word) for word in word_tokenize(doc)]
 
-def get_X_train(data, wn=False, max_n_gram=1, lowercase=True, nopunc=False, lemmatize=False, stem=False, remove_stop_words=True, tfidf=False, verbose=True):
+def get_X_train(data, wn=False, ignore=False, max_n_gram=1, lowercase=True, nopunc=False, lemmatize=False, stem=False, remove_stop_words=True, tfidf=False, verbose=True):
 
     if verbose:
         print('Using n-grams of up to %d words in length' % max_n_gram)
@@ -148,7 +149,7 @@ def get_X_train(data, wn=False, max_n_gram=1, lowercase=True, nopunc=False, lemm
             print('Done learning vocabulary dictionary')
             vectorizer = WordNetVectorizer(vectorizer)
             print('Getting wordnet based feature vectors...')
-            X_train = vectorizer.get_word_net_feature_vecs(data)
+            X_train = vectorizer.get_word_net_feature_vecs(data, ignore)
             print('Done getting wordnet based feature vectors')
         else:
             X_train = vectorizer.fit_transform(data)
