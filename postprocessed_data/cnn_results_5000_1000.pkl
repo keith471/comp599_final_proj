@@ -1,0 +1,27 @@
+(lp1
+(lp2
+I5000
+a(I1000
+cnumpy.core.multiarray
+scalar
+p3
+(cnumpy
+dtype
+p4
+(S'f8'
+I0
+I1
+tRp5
+(I3
+S'<'
+NNNI-1
+I-1
+I0
+tbS'\xb3\xce? o\xfd\xf7?'
+tRp6
+g3
+(g5
+S'\x7f=\x83P\x10\x18\xe5?'
+tRp7
+tp8
+aa.
